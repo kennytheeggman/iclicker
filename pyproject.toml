@@ -1,0 +1,18 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "iclicker"
+version = "0.0.0"
+dependencies = [
+	"rel",
+	"requests",
+	"websocket-client"
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[project.scripts]
+iclicker = "iclicker.__main__:main"
