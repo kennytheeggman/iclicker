@@ -1,7 +1,7 @@
 # Automatic iClicker
 
 This is a small python executable script to automatically run iClicker in the background by
-emulating its network calls. 
+emulating its network calls. **THE SCRIPT IS CURRENTLY NOT FULLY TESTED!**
 
 ## Installation
 
