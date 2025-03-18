@@ -59,9 +59,9 @@ pip install dist/iclicker-*.tar.gz --break-system-packages
 
 ## Usage
 
-Use your email and password to start the script. Note this will only work if remote answering is
-allowed.
+Use your email to start the script. Note this will only work if remote answering is allowed. You
+will then be prompted for the password.
 
 ```sh
-iclicker <email> <password>
+iclicker <email>
 ```

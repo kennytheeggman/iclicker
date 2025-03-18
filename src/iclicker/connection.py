@@ -103,12 +103,12 @@ def connect(user: str, password: str, waits: list[Callable[[], NoneType]], getco
     instructors = course["instructors"]
 
     waits[0]()
-    while (status(course_id, auth_token).json()["meetingId"] is None):
-        try:
-            time.sleep(status_interval)
-        except KeyboardInterrupt:
-            logger.info("Stopping Connection")
-            exit(0)
+    try:
+        while (status(course_id, auth_token).json()["meetingId"] is None):
+                time.sleep(status_interval)
+    except KeyboardInterrupt:
+        logger.info("Stopping Connection")
+        exit(0)
     waits[1]()
 
     status_res = status(course_id, auth_token)

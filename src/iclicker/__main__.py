@@ -1,5 +1,6 @@
 from . import connection 
 from . import websockets
+from getpass import getpass
 import logging
 import sys
 
@@ -25,12 +26,12 @@ def main():
     date_format = "%H:%M:%S"
     logging.basicConfig(level=logging.INFO, format=logger_format, datefmt=date_format)
     args = sys.argv
-    if len(sys.argv) != 3:
+    if len(sys.argv) != 2:
         logging.error("Unexpected number of arguments.")
-        logging.info("Usage: iclicker <email> <password>")
+        logging.info("Usage: iclicker <email>")
         exit(0)
     user = args[1]
-    password = args[2]
+    password = getpass()
     keys = connection.connect(user, 
                     password, 
                     [pre_wait, post_wait], 
