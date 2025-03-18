@@ -7,7 +7,7 @@ emulating its network calls.
 
 The only option for installation right now is to build from source. 
 
-Step 1: Clone repository and create virtual environment
+### Step 1: Clone repository and create virtual environment
 
 First, clone the repository:
 
@@ -27,7 +27,7 @@ If on Windows:
 python3 -m venv ./venv && venv/Scripts/activate
 ```
 
-Step 2: Build the library
+### Step 2: Build the library
 
 First, install build dependencies
 
@@ -41,7 +41,7 @@ Then, build the library
 python -m build
 ```
 
-Step 3: Install the library
+### Step 3: Install the library
 
 Use your favorite python global package manager, e.g. `pipx`, `pip --break-system-packages`, `uv`, etc.
 
@@ -57,7 +57,7 @@ Installation with `pip`:
 pip install dist/iclicker-*.tar.gz --break-system-packages
 ```
 
-# Usage
+## Usage
 
 Use your email and password to start the script. Note this will only work if remote answering is
 allowed.
