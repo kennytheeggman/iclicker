@@ -4,9 +4,12 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-def POST(url: str, data: dict | None, headers: dict | None):
-    res = requests.post(url, json=data, headers=headers)
-    logger.debug(f"POST: {url}")
+def POST(url: str, data: dict | None, headers: dict | None, text: str | None = None):
+    if text is None:
+        res = requests.post(url, json=data, headers=headers)
+    else:
+        res = requests.post(url, data=text, headers=headers)
+    logger.info(f"POST: {url}")
     return res
 
 def GET(url: str, data: dict | None, headers: dict | None):

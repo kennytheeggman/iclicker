@@ -8,29 +8,66 @@ logger = logging.getLogger(__name__)
 
 uid: str | None = None
 auth: str | None = None
+course_id: str | None = None
 
 def on_open(_: websocket.WebSocket):
     logger.debug("Opened connection")
     return
 
-def on_message(_: websocket.WebSocket, message: str):
+def on_message(ws: websocket.WebSocket, message: str):
     evt: dict = json.loads(message)
-    if evt["event"] != "question":
+    data = json.loads(evt["data"])
+    if evt["event"] != "question" and evt["event"] != "pusher:connection_established":
         return
-    question_id = evt["data"]["questionId"]
-    question_name = evt["data"]["name"]
-    activity_id = evt["data"]["activityId"]
-    logger.info(f"Answering {question_name}")
 
-    global uid
-    global auth
-    auth_header = f"Bearer {auth}"
-    answer_headers = gen_headers(content_type="application/json", auth=auth_header)
-    __ = POST("https://api.iclicker.com/v2/activities/{activity_id}/questions/{question_id}/user-questions/",
-                      { "activityId": activity_id, "answer": "a", "clientType": "WEB", "questionId": question_id, "user_id": uid },
-                      answer_headers)
+    if evt["event"] == "question":
+        # question answering logic (not working yet, because registering userQuestionId is needed)
+        question_id = data["questionId"]
+        question_name = data["name"]
+        activity_id = data["activityId"]
+        logger.info(f"Answering {question_name}")
 
-    logger.debug(message)
+        global uid
+        global auth
+        auth_header = f"Bearer {auth}"
+        answer_headers = gen_headers(content_type="application/json", auth=auth_header)
+        __ = POST(f"https://api.iclicker.com/v2/activities/{activity_id}/questions/{question_id}/user-questions/",
+                          { "activityId": activity_id, "answer": "a", "clientType": "WEB", "questionId": question_id, "user_id": uid },
+                          answer_headers)
+    else:
+        # websocket authentication logic
+        socket_id = data["socket_id"]
+        auth_val = f"Bearer {auth}"
+        course_channel_name = f"private-{course_id}"
+        user_channel_name = f"private-{course_id}@{uid}"
+        auth_headers = gen_headers(content_type="application/x-www-form-urlencoded", auth=auth_val)
+        course_auth_response = POST("https://api.iclicker.com/v1/websockets/authenticate-pusher-channel",
+                                    None, text=f"socket_id={socket_id}&channel_name={course_channel_name}", headers=auth_headers)
+        course_auth = course_auth_response.json()["auth"]
+        user_auth_response = POST("https://api.iclicker.com/v1/websockets/authenticate-pusher-channel",
+                                  None, text=f"socket_id={socket_id}&channel_name={user_channel_name}", headers=auth_headers)
+        user_auth = user_auth_response.json()["auth"]
+
+        course_sub = {
+                "event": "pusher:subscribe",
+                "data": {
+                    "auth": course_auth,
+                    "channel": course_channel_name
+                }
+        }
+        user_sub = {
+                "event": "pusher:subscribe",
+                "data": {
+                    "auth": user_auth,
+                    "channel": user_channel_name
+                }
+        }
+
+        logger.debug(course_sub)
+        logger.debug(user_sub)
+
+        ws.send(json.dumps(course_sub))
+        ws.send(json.dumps(user_sub))
 
 def on_error(_: websocket.WebSocket, error: str):
     logger.error(error)
@@ -44,8 +81,10 @@ def connect(keys: dict[str, str]):
     auth_token = keys["auth_token"]
     global auth
     global uid
+    global course_id
     auth = auth_token
     uid = user_id
+    course_id = keys["course_id"]
     websocket.enableTrace(True)
     ws = websocket.WebSocketApp(f"wss://ws-mt1.pusher.com/app/{ws_key}?protocol=7&client=js&version=8.3.0&flash=false",
                                 on_open=on_open,
