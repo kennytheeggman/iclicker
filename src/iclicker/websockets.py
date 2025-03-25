@@ -1,7 +1,7 @@
 import websocket
 import rel
 import json
-from .request import POST, gen_headers
+from .request import POST, GET, gen_headers
 import logging
 
 logger = logging.getLogger(__name__)
@@ -9,6 +9,7 @@ logger = logging.getLogger(__name__)
 uid: str | None = None
 auth: str | None = None
 course_id: str | None = None
+activity_id: str | None = None
 
 def on_open(_: websocket.WebSocket):
     logger.debug("Opened connection")
@@ -17,23 +18,29 @@ def on_open(_: websocket.WebSocket):
 def on_message(ws: websocket.WebSocket, message: str):
     evt: dict = json.loads(message)
     data = json.loads(evt["data"])
-    if evt["event"] != "question" and evt["event"] != "pusher:connection_established":
+    if evt["event"] != "answer" and evt["event"] != "pusher:connection_established":
         return
 
-    if evt["event"] == "question":
+    if evt["event"] == "answer":
         # question answering logic (not working yet, because registering userQuestionId is needed)
         question_id = data["questionId"]
-        question_name = data["name"]
-        activity_id = data["activityId"]
-        logger.info(f"Answering {question_name}")
+        # question_name = data["name"]
+        # activity_id = data["activityId"]
+        # logger.info(f"Answering {question_name}")
 
         global uid
         global auth
+        global activity_id
         auth_header = f"Bearer {auth}"
         answer_headers = gen_headers(content_type="application/json", auth=auth_header)
-        __ = POST(f"https://api.iclicker.com/v2/activities/{activity_id}/questions/{question_id}/user-questions/",
-                          { "activityId": activity_id, "answer": "a", "clientType": "WEB", "questionId": question_id, "user_id": uid },
+        resp = POST(f"https://api.iclicker.com/v2/activities/{activity_id}/questions/{question_id}/user-questions/",
+                          { "activityId": activity_id, "answer": "a", "clientType": "WEB", "questionId": question_id, "userId": uid },
                           answer_headers)
+        logger.info(resp.text)
+        # probably use the above data excluding answer and hit "https://api.iclicker.com/v1/userQuestions"
+        # it will likely return something useful
+        # assuming no validation occurs more data better than less
+        # then hit the question answerer (append user question id to end of url) with above payload + answer
     else:
         # websocket authentication logic
         socket_id = data["socket_id"]
@@ -82,10 +89,16 @@ def connect(keys: dict[str, str]):
     global auth
     global uid
     global course_id
+    global activity_id
     auth = auth_token
     uid = user_id
     course_id = keys["course_id"]
-    websocket.enableTrace(True)
+    headers = gen_headers("application/json", f"Bearer {auth}")
+    resp = GET(f"https://api.iclicker.com/v2/courses/{course_id}/class-sections?expandChild=activities&userId={uid}",
+                None, headers)
+    activity_id = resp.json()[0]["activities"][0]["_id"]
+    logger.info(f"Activity id: {activity_id}")
+    websocket.enableTrace(False)
     ws = websocket.WebSocketApp(f"wss://ws-mt1.pusher.com/app/{ws_key}?protocol=7&client=js&version=8.3.0&flash=false",
                                 on_open=on_open,
                                 on_message=on_message,
